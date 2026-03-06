@@ -41,11 +41,44 @@ const productSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  // Pricing for store items (quantity-based)
+  // Pricing for store items (quantity-based) - legacy field for simple products
   pricePerUnit: {
     type: Number,
     min: 0
   },
+  // Base unit for store items (smallest unit for calculations: kg, tablet, ml, etc.)
+  baseUnit: {
+    type: String,
+    trim: true
+  },
+  // Stock unit for store items (how stock is entered/displayed: bag, pack, bottle, etc.)
+  stockUnit: {
+    type: String,
+    trim: true
+  },
+  // How many base units equal one stock unit (e.g., 1 bag = 25 kg)
+  stockUnitEquivalent: {
+    type: Number,
+    min: 0
+  },
+  // Multiple sale units for store items
+  saleUnits: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    equivalent: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
   // Stock stored in smallest unit (paints for feeds, quantity for store)
   // For feeds: 1 bag = 8 paints, so stock is in paints
   stockInPaints: {

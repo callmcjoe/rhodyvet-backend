@@ -52,6 +52,21 @@ const saleItemSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  // Sale unit info for store items
+  saleUnitName: {
+    type: String,
+    trim: true
+  },
+  saleUnitEquivalent: {
+    type: Number,
+    default: 1,
+    min: 0
+  },
+  stockDeducted: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   // Total paints equivalent (for stock calculation)
   totalPaintsEquivalent: {
     type: Number,
@@ -76,6 +91,38 @@ const saleSchema = new mongoose.Schema({
     required: true
   },
   items: [saleItemSchema],
+  // Total bags in this sale (for discount calculation)
+  totalBags: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  // Subtotal before discount
+  subtotalAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  // Discount information
+  discountAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  discountType: {
+    type: String,
+    enum: ['none', 'automatic', 'manual', 'approved'],
+    default: 'none'
+  },
+  discountReason: {
+    type: String,
+    trim: true
+  },
+  discountApprovedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  // Final amount after discount
   totalAmount: {
     type: Number,
     required: true,

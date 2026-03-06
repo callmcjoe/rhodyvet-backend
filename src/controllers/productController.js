@@ -116,7 +116,12 @@ const createProduct = async (req, res) => {
       pricePerUnit,
       stockInPaints,
       stockInQuantity,
-      lowStockThreshold
+      initialStockInStockUnits,
+      lowStockThreshold,
+      baseUnit,
+      stockUnit,
+      stockUnitEquivalent,
+      saleUnits
     } = req.body;
 
     // Validate unit type matches department
@@ -134,6 +139,29 @@ const createProduct = async (req, res) => {
       });
     }
 
+    // Validate store products have baseUnit and saleUnits
+    if (department === 'store') {
+      if (!baseUnit) {
+        return res.status(400).json({
+          success: false,
+          message: 'Base unit is required for store products'
+        });
+      }
+      if (!saleUnits || saleUnits.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one sale unit is required for store products'
+        });
+      }
+    }
+
+    // Calculate stock in base units for store products
+    let calculatedStockInQuantity = stockInQuantity || 0;
+    if (unitType === 'quantity' && initialStockInStockUnits && stockUnitEquivalent) {
+      // Convert from stock units to base units
+      calculatedStockInQuantity = initialStockInStockUnits * stockUnitEquivalent;
+    }
+
     const product = await Product.create({
       name,
       description,
@@ -145,14 +173,18 @@ const createProduct = async (req, res) => {
       pricePerPaint: unitType === 'bag' ? pricePerPaint : undefined,
       pricePerHalfPaint: unitType === 'bag' ? pricePerHalfPaint : undefined,
       pricePerUnit: unitType === 'quantity' ? pricePerUnit : undefined,
+      baseUnit: unitType === 'quantity' ? baseUnit : undefined,
+      stockUnit: unitType === 'quantity' ? stockUnit : undefined,
+      stockUnitEquivalent: unitType === 'quantity' ? stockUnitEquivalent : undefined,
+      saleUnits: unitType === 'quantity' ? saleUnits : undefined,
       stockInPaints: unitType === 'bag' ? (stockInPaints || 0) : 0,
-      stockInQuantity: unitType === 'quantity' ? (stockInQuantity || 0) : 0,
+      stockInQuantity: unitType === 'quantity' ? calculatedStockInQuantity : 0,
       lowStockThreshold: lowStockThreshold || 10,
       createdBy: req.user.id
     });
 
     // Log initial stock if any
-    if ((unitType === 'bag' && stockInPaints > 0) || (unitType === 'quantity' && stockInQuantity > 0)) {
+    if ((unitType === 'bag' && stockInPaints > 0) || (unitType === 'quantity' && calculatedStockInQuantity > 0)) {
       await StockLog.create({
         product: product._id,
         productName: product.name,
@@ -162,8 +194,8 @@ const createProduct = async (req, res) => {
         quantityChangedInPaints: unitType === 'bag' ? stockInPaints : 0,
         newStockInPaints: unitType === 'bag' ? stockInPaints : 0,
         previousStockInQuantity: 0,
-        quantityChangedInQuantity: unitType === 'quantity' ? stockInQuantity : 0,
-        newStockInQuantity: unitType === 'quantity' ? stockInQuantity : 0,
+        quantityChangedInQuantity: unitType === 'quantity' ? calculatedStockInQuantity : 0,
+        newStockInQuantity: unitType === 'quantity' ? calculatedStockInQuantity : 0,
         notes: 'Initial stock on product creation',
         performedBy: req.user.id
       });
@@ -217,7 +249,11 @@ const updateProduct = async (req, res) => {
       pricePerHalfPaint,
       pricePerUnit,
       lowStockThreshold,
-      isActive
+      isActive,
+      baseUnit,
+      stockUnit,
+      stockUnitEquivalent,
+      saleUnits
     } = req.body;
 
     // Update allowed fields (cannot change department or unitType after creation)
@@ -235,6 +271,10 @@ const updateProduct = async (req, res) => {
       if (pricePerHalfPaint !== undefined) product.pricePerHalfPaint = pricePerHalfPaint;
     } else {
       if (pricePerUnit !== undefined) product.pricePerUnit = pricePerUnit;
+      if (baseUnit !== undefined) product.baseUnit = baseUnit;
+      if (stockUnit !== undefined) product.stockUnit = stockUnit;
+      if (stockUnitEquivalent !== undefined) product.stockUnitEquivalent = stockUnitEquivalent;
+      if (saleUnits !== undefined) product.saleUnits = saleUnits;
     }
 
     await product.save();

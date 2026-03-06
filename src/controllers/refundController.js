@@ -236,29 +236,126 @@ const createRefund = async (req, res) => {
       totalRefundAmount += refundAmount;
     }
 
-    // Create refund request
-    const refund = await Refund.create({
-      sale: sale._id,
-      saleNumber: sale.saleNumber,
-      items: processedItems,
-      totalRefundAmount,
-      reason,
-      requestedBy: req.user.id
-    });
+    // Generate refund number
+    const refundNumber = await Refund.generateRefundNumber();
 
-    // Update sale status to pending refund
-    sale.status = 'refund_pending';
-    await sale.save();
+    // Check if user is admin (auto-approve) or sales rep (needs approval)
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
 
-    const populatedRefund = await Refund.findById(refund._id)
-      .populate('requestedBy', 'firstName lastName')
-      .populate('sale', 'saleNumber');
+    if (isAdmin) {
+      // Admin: Auto-approve refund and restore stock immediately
+      const session = await mongoose.startSession();
+      session.startTransaction();
 
-    res.status(201).json({
-      success: true,
-      message: 'Refund request submitted for approval',
-      data: populatedRefund
-    });
+      try {
+        // Create approved refund
+        const refund = await Refund.create([{
+          refundNumber,
+          sale: sale._id,
+          saleNumber: sale.saleNumber,
+          items: processedItems,
+          totalRefundAmount,
+          reason,
+          requestedBy: req.user.id,
+          status: 'approved',
+          approvedBy: req.user.id,
+          processedAt: new Date()
+        }], { session });
+
+        // Restore stock for each item
+        for (const item of processedItems) {
+          const product = await Product.findById(item.product).session(session);
+
+          if (product) {
+            if (item.unitType === 'bag') {
+              const previousStock = product.stockInPaints;
+              product.stockInPaints += item.totalPaintsEquivalent;
+              await product.save({ session });
+
+              await StockLog.create([{
+                product: product._id,
+                productName: product.name,
+                department: product.department,
+                actionType: 'refund',
+                previousStockInPaints: previousStock,
+                quantityChangedInPaints: item.totalPaintsEquivalent,
+                newStockInPaints: product.stockInPaints,
+                refundReference: refund[0]._id,
+                performedBy: req.user.id
+              }], { session });
+            } else {
+              const previousStock = product.stockInQuantity;
+              product.stockInQuantity += item.quantity;
+              await product.save({ session });
+
+              await StockLog.create([{
+                product: product._id,
+                productName: product.name,
+                department: product.department,
+                actionType: 'refund',
+                previousStockInQuantity: previousStock,
+                quantityChangedInQuantity: item.quantity,
+                newStockInQuantity: product.stockInQuantity,
+                refundReference: refund[0]._id,
+                performedBy: req.user.id
+              }], { session });
+            }
+          }
+        }
+
+        // Update sale status
+        if (totalRefundAmount >= sale.totalAmount * 0.99) {
+          sale.status = 'fully_refunded';
+        } else {
+          sale.status = 'partially_refunded';
+        }
+        await sale.save({ session });
+
+        await session.commitTransaction();
+
+        const populatedRefund = await Refund.findById(refund[0]._id)
+          .populate('requestedBy', 'firstName lastName')
+          .populate('approvedBy', 'firstName lastName')
+          .populate('sale', 'saleNumber');
+
+        res.status(201).json({
+          success: true,
+          message: 'Refund processed and stock restored',
+          data: populatedRefund
+        });
+      } catch (error) {
+        await session.abortTransaction();
+        throw error;
+      } finally {
+        session.endSession();
+      }
+    } else {
+      // Sales rep: Create pending refund request
+      const refund = await Refund.create({
+        refundNumber,
+        sale: sale._id,
+        saleNumber: sale.saleNumber,
+        items: processedItems,
+        totalRefundAmount,
+        reason,
+        requestedBy: req.user.id,
+        status: 'pending'
+      });
+
+      // Update sale status to pending refund
+      sale.status = 'refund_pending';
+      await sale.save();
+
+      const populatedRefund = await Refund.findById(refund._id)
+        .populate('requestedBy', 'firstName lastName')
+        .populate('sale', 'saleNumber');
+
+      res.status(201).json({
+        success: true,
+        message: 'Refund request submitted for approval',
+        data: populatedRefund
+      });
+    }
   } catch (error) {
     console.error('Create refund error:', error);
     res.status(500).json({

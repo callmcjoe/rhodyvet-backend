@@ -7,7 +7,12 @@ const {
   getSale,
   getSaleByNumber,
   createSale,
-  getMySalesSummary
+  getMySalesSummary,
+  requestDiscount,
+  getDiscountRequests,
+  approveDiscountRequest,
+  rejectDiscountRequest,
+  getMyDiscountRequests
 } = require('../controllers/saleController');
 
 const {
@@ -40,19 +45,28 @@ const createRefundValidation = [
 // All routes require authentication
 router.use(protect);
 
-// Sales routes
+// Sales routes (specific routes BEFORE generic /:id)
 router.get('/', getAllSales);
 router.get('/my-summary', getMySalesSummary);
 router.get('/number/:saleNumber', getSaleByNumber);
-router.get('/:id', getSale);
-router.post('/', createSaleValidation, createSale);
 
-// Refund routes
+// Discount request routes (must be before /:id)
+router.post('/request-discount', requestDiscount);
+router.get('/my-discount-requests', getMyDiscountRequests);
+router.get('/discount-requests', authorizeMinRole('admin'), getDiscountRequests);
+router.put('/discount-requests/:id/approve', authorizeMinRole('admin'), approveDiscountRequest);
+router.put('/discount-requests/:id/reject', authorizeMinRole('admin'), rejectDiscountRequest);
+
+// Refund routes (must be before /:id)
 router.get('/refunds/all', getAllRefunds);
 router.get('/refunds/pending', authorizeMinRole('admin'), getPendingRefunds);
-router.get('/refunds/:id', getRefund);
 router.post('/refunds', createRefundValidation, createRefund);
+router.get('/refunds/:id', getRefund);
 router.put('/refunds/:id/approve', authorizeMinRole('admin'), approveRefund);
 router.put('/refunds/:id/reject', authorizeMinRole('admin'), rejectRefund);
+
+// Generic routes (must be last)
+router.get('/:id', getSale);
+router.post('/', createSaleValidation, createSale);
 
 module.exports = router;

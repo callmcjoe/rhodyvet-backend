@@ -76,7 +76,29 @@ const formatStockDisplay = (product) => {
       return `${display.paints} ${display.paints === 1 ? 'paint' : 'paints'}`;
     }
   }
-  return `${product.stockInQuantity} ${product.stockInQuantity === 1 ? 'unit' : 'units'}`;
+
+  // For store products with stock unit conversion
+  if (product.stockUnit && product.stockUnitEquivalent && product.stockUnitEquivalent > 0) {
+    const stockInBaseUnits = product.stockInQuantity;
+    const stockUnitQty = Math.floor(stockInBaseUnits / product.stockUnitEquivalent);
+    const remainingBaseUnits = stockInBaseUnits % product.stockUnitEquivalent;
+
+    const stockUnitLabel = product.stockUnit || 'unit';
+    const baseUnitLabel = product.baseUnit || 'unit';
+
+    if (stockUnitQty > 0 && remainingBaseUnits > 0) {
+      return `${stockUnitQty} ${stockUnitLabel}${stockUnitQty !== 1 ? 's' : ''} and ${remainingBaseUnits} ${baseUnitLabel}`;
+    } else if (stockUnitQty > 0) {
+      return `${stockUnitQty} ${stockUnitLabel}${stockUnitQty !== 1 ? 's' : ''}`;
+    } else {
+      return `${remainingBaseUnits} ${baseUnitLabel}`;
+    }
+  }
+
+  // Fallback: show stock with base unit
+  const baseUnit = product.baseUnit || 'unit';
+  const qty = product.stockInQuantity;
+  return `${qty} ${baseUnit}${qty !== 1 ? 's' : ''}`;
 };
 
 module.exports = {

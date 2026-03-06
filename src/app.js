@@ -10,6 +10,9 @@ const productRoutes = require('./routes/products');
 const saleRoutes = require('./routes/sales');
 const stockRoutes = require('./routes/stock');
 const dashboardRoutes = require('./routes/dashboard');
+const clientRoutes = require('./routes/clients');
+const treatmentRoutes = require('./routes/treatments');
+const chickenRoutes = require('./routes/chicken');
 
 // Connect to database
 connectDB();
@@ -27,6 +30,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/treatments', treatmentRoutes);
+app.use('/api/chicken', chickenRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

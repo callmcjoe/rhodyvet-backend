@@ -114,26 +114,23 @@ const refundSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate refund number before saving
-refundSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
+// Helper function to generate refund number (called from controller)
+refundSchema.statics.generateRefundNumber = async function() {
+  const date = new Date();
+  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
 
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
-    const count = await this.constructor.countDocuments({
-      createdAt: { $gte: startOfDay, $lte: endOfDay }
-    });
+  const count = await this.countDocuments({
+    createdAt: { $gte: startOfDay, $lte: endOfDay }
+  });
 
-    const sequence = (count + 1).toString().padStart(4, '0');
-    this.refundNumber = `REF-${year}${month}${day}-${sequence}`;
-  }
-  next();
-});
+  const sequence = (count + 1).toString().padStart(4, '0');
+  return `REF-${year}${month}${day}-${sequence}`;
+};
 
 // Indexes
 refundSchema.index({ refundNumber: 1 });

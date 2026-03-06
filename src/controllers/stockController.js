@@ -16,7 +16,7 @@ const getStockOverview = async (req, res) => {
     }
 
     const products = await Product.find(query)
-      .select('name department unitType stockInPaints stockInQuantity lowStockThreshold')
+      .select('name department unitType stockInPaints stockInQuantity lowStockThreshold baseUnit stockUnit stockUnitEquivalent')
       .sort({ name: 1 });
 
     const stockData = products.map(p => ({
@@ -28,7 +28,11 @@ const getStockOverview = async (req, res) => {
       stockDisplay: formatStockDisplay(p),
       stockInBags: p.unitType === 'bag' ? (p.stockInPaints / PAINTS_PER_BAG).toFixed(2) : null,
       isLowStock: p.isLowStock,
-      lowStockThreshold: p.lowStockThreshold
+      lowStockThreshold: p.lowStockThreshold,
+      // Include stock unit fields for store products
+      baseUnit: p.baseUnit,
+      stockUnit: p.stockUnit,
+      stockUnitEquivalent: p.stockUnitEquivalent
     }));
 
     // Summary statistics
