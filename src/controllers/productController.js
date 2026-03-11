@@ -94,6 +94,8 @@ const getProduct = async (req, res) => {
 // @route   POST /api/products
 // @access  Private (Admin/Super Admin)
 const createProduct = async (req, res) => {
+  console.log('=== CREATE PRODUCT CALLED ===');
+  console.log('Request body:', req.body);
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -123,6 +125,35 @@ const createProduct = async (req, res) => {
       stockUnitEquivalent,
       saleUnits
     } = req.body;
+
+    // Check if product with same name already exists (case-insensitive)
+    const trimmedName = name.trim();
+    console.log('Checking for existing product with name:', trimmedName);
+
+    const existingProduct = await Product.findOne({
+      name: { $regex: new RegExp(`^${trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
+
+    console.log('Existing product found:', existingProduct ? existingProduct.name : 'None');
+
+    if (existingProduct) {
+      console.log('Returning duplicate error for:', existingProduct.name);
+      return res.status(409).json({
+        success: false,
+        code: 'DUPLICATE_PRODUCT',
+        message: `Product "${existingProduct.name}" already exists`,
+        existingProduct: {
+          _id: existingProduct._id,
+          name: existingProduct.name,
+          department: existingProduct.department,
+          unitType: existingProduct.unitType,
+          baseUnit: existingProduct.baseUnit,
+          stockUnit: existingProduct.stockUnit,
+          stockUnitEquivalent: existingProduct.stockUnitEquivalent,
+          stockDisplay: formatStockDisplay(existingProduct)
+        }
+      });
+    }
 
     // Validate unit type matches department
     if (department === 'feeds' && unitType !== 'bag') {

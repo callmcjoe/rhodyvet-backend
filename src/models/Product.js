@@ -133,4 +133,10 @@ productSchema.set('toObject', { virtuals: true });
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ department: 1, isActive: 1 });
 
+// Unique index on name (case-insensitive)
+productSchema.index(
+  { name: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
+
 module.exports = mongoose.model('Product', productSchema);

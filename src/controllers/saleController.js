@@ -15,7 +15,7 @@ const MIN_BAGS_FOR_AUTO_DISCOUNT = 10; // Minimum bags for automatic discount
 // @access  Private
 const getAllSales = async (req, res) => {
   try {
-    const { startDate, endDate, soldBy, department, status, page = 1, limit = 20 } = req.query;
+    const { startDate, endDate, soldBy, department, status, salesChannel, page = 1, limit = 20 } = req.query;
 
     const query = {};
 
@@ -41,6 +41,11 @@ const getAllSales = async (req, res) => {
     // Filter by status
     if (status) {
       query.status = status;
+    }
+
+    // Filter by sales channel (jumia, walk-in)
+    if (salesChannel) {
+      query.salesChannel = salesChannel;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -153,7 +158,7 @@ const createSale = async (req, res) => {
       });
     }
 
-    const { items, paymentMethod, notes, manualDiscount, discountReason } = req.body;
+    const { items, paymentMethod, notes, manualDiscount, discountReason, salesChannel } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({
@@ -377,7 +382,8 @@ const createSale = async (req, res) => {
       paymentMethod: paymentMethod || 'cash',
       soldBy: req.user.id,
       soldByDepartment: req.user.department,
-      notes
+      notes,
+      salesChannel: salesChannel || 'walk-in'
     });
 
     await sale.save({ session });

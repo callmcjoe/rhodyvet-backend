@@ -151,6 +151,12 @@ const saleSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+  // Sales channel - where the sale was made from
+  salesChannel: {
+    type: String,
+    enum: ['walk-in', 'jumia'],
+    default: 'walk-in'
   }
 }, {
   timestamps: true
@@ -183,5 +189,6 @@ saleSchema.index({ saleNumber: 1 });
 saleSchema.index({ soldBy: 1, createdAt: -1 });
 saleSchema.index({ createdAt: -1 });
 saleSchema.index({ status: 1 });
+saleSchema.index({ salesChannel: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Sale', saleSchema);
