@@ -2,13 +2,13 @@
 // Base unit: 1 Paint
 // 1 Bag = 8 Paints
 // 1/2 Bag = 4 Paints
-// 1/3 Bag = 2.67 Paints (rounded to 2.67)
+// 1/4 Bag = 2 Paints
 // 1 Paint = 1 Paint
 // 1/2 Paint = 0.5 Paints
 
 const PAINTS_PER_BAG = 8;
 const PAINTS_PER_HALF_BAG = 4;
-const PAINTS_PER_THIRD_BAG = 8 / 3; // ~2.67
+const PAINTS_PER_QUARTER_BAG = 2;
 const PAINTS_PER_PAINT = 1;
 const PAINTS_PER_HALF_PAINT = 0.5;
 
@@ -17,7 +17,7 @@ const convertToPaints = (quantities) => {
   const {
     quantityBags = 0,
     quantityHalfBags = 0,
-    quantityThirdBags = 0,
+    quantityQuarterBags = 0,
     quantityPaints = 0,
     quantityHalfPaints = 0
   } = quantities;
@@ -25,7 +25,7 @@ const convertToPaints = (quantities) => {
   const totalPaints =
     (quantityBags * PAINTS_PER_BAG) +
     (quantityHalfBags * PAINTS_PER_HALF_BAG) +
-    (quantityThirdBags * PAINTS_PER_THIRD_BAG) +
+    (quantityQuarterBags * PAINTS_PER_QUARTER_BAG) +
     (quantityPaints * PAINTS_PER_PAINT) +
     (quantityHalfPaints * PAINTS_PER_HALF_PAINT);
 
@@ -49,7 +49,7 @@ const calculateFeedItemPrice = (quantities, product) => {
   const {
     quantityBags = 0,
     quantityHalfBags = 0,
-    quantityThirdBags = 0,
+    quantityQuarterBags = 0,
     quantityPaints = 0,
     quantityHalfPaints = 0
   } = quantities;
@@ -57,7 +57,7 @@ const calculateFeedItemPrice = (quantities, product) => {
   const totalPrice =
     (quantityBags * (product.pricePerBag || 0)) +
     (quantityHalfBags * (product.pricePerHalfBag || 0)) +
-    (quantityThirdBags * (product.pricePerThirdBag || 0)) +
+    (quantityQuarterBags * (product.pricePerQuarterBag || 0)) +
     (quantityPaints * (product.pricePerPaint || 0)) +
     (quantityHalfPaints * (product.pricePerHalfPaint || 0));
 
@@ -104,7 +104,7 @@ const formatStockDisplay = (product) => {
 module.exports = {
   PAINTS_PER_BAG,
   PAINTS_PER_HALF_BAG,
-  PAINTS_PER_THIRD_BAG,
+  PAINTS_PER_QUARTER_BAG,
   PAINTS_PER_PAINT,
   PAINTS_PER_HALF_PAINT,
   convertToPaints,

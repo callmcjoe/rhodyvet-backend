@@ -29,7 +29,7 @@ const productSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  pricePerThirdBag: {
+  pricePerQuarterBag: {
     type: Number,
     min: 0
   },

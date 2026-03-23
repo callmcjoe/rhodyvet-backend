@@ -199,7 +199,7 @@ const createSale = async (req, res) => {
         const quantities = {
           quantityBags: item.quantityBags || 0,
           quantityHalfBags: item.quantityHalfBags || 0,
-          quantityThirdBags: item.quantityThirdBags || 0,
+          quantityQuarterBags: item.quantityQuarterBags || 0,
           quantityPaints: item.quantityPaints || 0,
           quantityHalfPaints: item.quantityHalfPaints || 0
         };
@@ -243,7 +243,7 @@ const createSale = async (req, res) => {
           unitType: product.unitType,
           quantityBags: quantities.quantityBags,
           quantityHalfBags: quantities.quantityHalfBags,
-          quantityThirdBags: quantities.quantityThirdBags,
+          quantityQuarterBags: quantities.quantityQuarterBags,
           quantityPaints: quantities.quantityPaints,
           quantityHalfPaints: quantities.quantityHalfPaints,
           totalPaintsEquivalent,
@@ -456,7 +456,7 @@ const requestDiscount = async (req, res) => {
         const quantities = {
           quantityBags: item.quantityBags || 0,
           quantityHalfBags: item.quantityHalfBags || 0,
-          quantityThirdBags: item.quantityThirdBags || 0,
+          quantityQuarterBags: item.quantityQuarterBags || 0,
           quantityPaints: item.quantityPaints || 0,
           quantityHalfPaints: item.quantityHalfPaints || 0
         };
@@ -575,7 +575,7 @@ const approveDiscountRequest = async (req, res) => {
         const quantities = {
           quantityBags: item.quantityBags || 0,
           quantityHalfBags: item.quantityHalfBags || 0,
-          quantityThirdBags: item.quantityThirdBags || 0,
+          quantityQuarterBags: item.quantityQuarterBags || 0,
           quantityPaints: item.quantityPaints || 0,
           quantityHalfPaints: item.quantityHalfPaints || 0
         };

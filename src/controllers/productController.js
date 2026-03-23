@@ -8,8 +8,7 @@ const { formatStockDisplay } = require('../utils/feedConversions');
 // @access  Private
 const getAllProducts = async (req, res) => {
   try {
-    const { department, search, isActive, lowStock } = req.query;
-
+    const { department, search, isActive, lowStock, page = 1, limit = 20 } = req.query;
     const query = {};
 
     // Filter by department
@@ -30,13 +29,26 @@ const getAllProducts = async (req, res) => {
       ];
     }
 
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get total count for pagination
+    let total = await Product.countDocuments(query);
+
     let products = await Product.find(query)
       .populate('createdBy', 'firstName lastName')
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
 
-    // Filter for low stock if requested
+    // Filter for low stock if requested (after pagination for accurate count)
     if (lowStock === 'true') {
-      products = products.filter(p => p.isLowStock);
+      // For low stock, we need to fetch all and filter, then paginate
+      const allProducts = await Product.find(query)
+        .populate('createdBy', 'firstName lastName')
+        .sort({ name: 1 });
+      const lowStockProducts = allProducts.filter(p => p.isLowStock);
+      total = lowStockProducts.length;
+      products = lowStockProducts.slice(skip, skip + parseInt(limit));
     }
 
     // Add formatted stock display
@@ -48,6 +60,9 @@ const getAllProducts = async (req, res) => {
     res.json({
       success: true,
       count: productsWithDisplay.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
       data: productsWithDisplay
     });
   } catch (error) {
@@ -94,8 +109,6 @@ const getProduct = async (req, res) => {
 // @route   POST /api/products
 // @access  Private (Admin/Super Admin)
 const createProduct = async (req, res) => {
-  console.log('=== CREATE PRODUCT CALLED ===');
-  console.log('Request body:', req.body);
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -112,7 +125,7 @@ const createProduct = async (req, res) => {
       unitType,
       pricePerBag,
       pricePerHalfBag,
-      pricePerThirdBag,
+      pricePerQuarterBag,
       pricePerPaint,
       pricePerHalfPaint,
       pricePerUnit,
@@ -128,16 +141,12 @@ const createProduct = async (req, res) => {
 
     // Check if product with same name already exists (case-insensitive)
     const trimmedName = name.trim();
-    console.log('Checking for existing product with name:', trimmedName);
 
     const existingProduct = await Product.findOne({
       name: { $regex: new RegExp(`^${trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
 
-    console.log('Existing product found:', existingProduct ? existingProduct.name : 'None');
-
     if (existingProduct) {
-      console.log('Returning duplicate error for:', existingProduct.name);
       return res.status(409).json({
         success: false,
         code: 'DUPLICATE_PRODUCT',
@@ -200,7 +209,7 @@ const createProduct = async (req, res) => {
       unitType,
       pricePerBag: unitType === 'bag' ? pricePerBag : undefined,
       pricePerHalfBag: unitType === 'bag' ? pricePerHalfBag : undefined,
-      pricePerThirdBag: unitType === 'bag' ? pricePerThirdBag : undefined,
+      pricePerQuarterBag: unitType === 'bag' ? pricePerQuarterBag : undefined,
       pricePerPaint: unitType === 'bag' ? pricePerPaint : undefined,
       pricePerHalfPaint: unitType === 'bag' ? pricePerHalfPaint : undefined,
       pricePerUnit: unitType === 'quantity' ? pricePerUnit : undefined,
@@ -275,7 +284,7 @@ const updateProduct = async (req, res) => {
       description,
       pricePerBag,
       pricePerHalfBag,
-      pricePerThirdBag,
+      pricePerQuarterBag,
       pricePerPaint,
       pricePerHalfPaint,
       pricePerUnit,
@@ -297,7 +306,7 @@ const updateProduct = async (req, res) => {
     if (product.unitType === 'bag') {
       if (pricePerBag !== undefined) product.pricePerBag = pricePerBag;
       if (pricePerHalfBag !== undefined) product.pricePerHalfBag = pricePerHalfBag;
-      if (pricePerThirdBag !== undefined) product.pricePerThirdBag = pricePerThirdBag;
+      if (pricePerQuarterBag !== undefined) product.pricePerQuarterBag = pricePerQuarterBag;
       if (pricePerPaint !== undefined) product.pricePerPaint = pricePerPaint;
       if (pricePerHalfPaint !== undefined) product.pricePerHalfPaint = pricePerHalfPaint;
     } else {

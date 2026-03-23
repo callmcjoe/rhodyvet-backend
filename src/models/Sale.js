@@ -31,7 +31,7 @@ const saleItemSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  quantityThirdBags: {
+  quantityQuarterBags: {
     type: Number,
     default: 0,
     min: 0

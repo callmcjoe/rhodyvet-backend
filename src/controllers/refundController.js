@@ -182,7 +182,7 @@ const createRefund = async (req, res) => {
         const quantities = {
           quantityBags: refundItem.quantityBags || 0,
           quantityHalfBags: refundItem.quantityHalfBags || 0,
-          quantityThirdBags: refundItem.quantityThirdBags || 0,
+          quantityQuarterBags: refundItem.quantityQuarterBags || 0,
           quantityPaints: refundItem.quantityPaints || 0,
           quantityHalfPaints: refundItem.quantityHalfPaints || 0
         };
@@ -206,7 +206,7 @@ const createRefund = async (req, res) => {
           unitType: 'bag',
           quantityBags: quantities.quantityBags,
           quantityHalfBags: quantities.quantityHalfBags,
-          quantityThirdBags: quantities.quantityThirdBags,
+          quantityQuarterBags: quantities.quantityQuarterBags,
           quantityPaints: quantities.quantityPaints,
           quantityHalfPaints: quantities.quantityHalfPaints,
           totalPaintsEquivalent,

@@ -7,7 +7,7 @@ const { roleHierarchy } = require('../middleware/roleCheck');
 // @access  Private (Admin/Super Admin)
 const getAllStaff = async (req, res) => {
   try {
-    const { department, role, isActive, search } = req.query;
+    const { department, role, isActive, search, page = 1, limit = 20 } = req.query;
 
     const query = {};
 
@@ -40,14 +40,24 @@ const getAllStaff = async (req, res) => {
       query.role = 'sales_rep';
     }
 
-    const staff = await User.find(query)
-      .select('-refreshToken')
-      .populate('createdBy', 'firstName lastName')
-      .sort({ createdAt: -1 });
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [staff, total] = await Promise.all([
+      User.find(query)
+        .select('-refreshToken')
+        .populate('createdBy', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      User.countDocuments(query)
+    ]);
 
     res.json({
       success: true,
       count: staff.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
       data: staff
     });
   } catch (error) {

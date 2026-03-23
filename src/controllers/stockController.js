@@ -8,16 +8,38 @@ const { formatStockDisplay, PAINTS_PER_BAG } = require('../utils/feedConversions
 // @access  Private (Admin/Super Admin)
 const getStockOverview = async (req, res) => {
   try {
-    const { department } = req.query;
+    const { department, search, page = 1, limit = 20 } = req.query;
 
     const query = { isActive: true };
     if (department) {
       query.department = department;
     }
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
 
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get total count and summary from all matching products
+    const allProducts = await Product.find(query)
+      .select('name department unitType stockInPaints stockInQuantity lowStockThreshold');
+
+    const total = allProducts.length;
+
+    // Summary statistics (from all products, not paginated)
+    const summary = {
+      totalProducts: total,
+      lowStockCount: allProducts.filter(p => p.isLowStock).length,
+      feedsProducts: allProducts.filter(p => p.department === 'feeds').length,
+      storeProducts: allProducts.filter(p => p.department === 'store').length
+    };
+
+    // Get paginated products
     const products = await Product.find(query)
       .select('name department unitType stockInPaints stockInQuantity lowStockThreshold baseUnit stockUnit stockUnitEquivalent')
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
 
     const stockData = products.map(p => ({
       _id: p._id,
@@ -29,23 +51,18 @@ const getStockOverview = async (req, res) => {
       stockInBags: p.unitType === 'bag' ? (p.stockInPaints / PAINTS_PER_BAG).toFixed(2) : null,
       isLowStock: p.isLowStock,
       lowStockThreshold: p.lowStockThreshold,
-      // Include stock unit fields for store products
       baseUnit: p.baseUnit,
       stockUnit: p.stockUnit,
       stockUnitEquivalent: p.stockUnitEquivalent
     }));
 
-    // Summary statistics
-    const summary = {
-      totalProducts: products.length,
-      lowStockCount: stockData.filter(s => s.isLowStock).length,
-      feedsProducts: products.filter(p => p.department === 'feeds').length,
-      storeProducts: products.filter(p => p.department === 'store').length
-    };
-
     res.json({
       success: true,
       summary,
+      count: stockData.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
       data: stockData
     });
   } catch (error) {
